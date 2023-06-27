@@ -1,0 +1,34 @@
+server:
+  http_listen_port: 9080
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: spring-boot-app
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: spring-boot
+      server: sam-notebook
+      __path__: /var/spring-boot-log/**/*.log
+- job_name: other-app
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: other-job
+      server: sam-notebook
+      __path__: /var/other-log/*.log
+- job_name: json-app
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: json-job
+      server: sam-notebook
+      __path__: /var/json-log/*.json
