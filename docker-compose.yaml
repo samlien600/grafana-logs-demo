@@ -1,7 +1,8 @@
 version: "3"
 
 networks:
-  loki:
+  demo-network:
+    driver: bridge 
 
 services:
   loki:
@@ -12,7 +13,7 @@ services:
     volumes:
       - ./loki/loki-local.yaml:/etc/loki/loki-local.yaml
     networks:
-      - loki
+      - demo-network
 
   promtail:
     image: grafana/promtail:2.8.0
@@ -23,7 +24,49 @@ services:
       - ../../json:/var/json-log
     command: -config.file=/etc/promtail/promtail-local.yaml
     networks:
-      - loki
+      - demo-network
+      
+  spring-boot:
+    container_name: spring-boot
+    build:
+      context: .
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysqldb
+    environment:
+      username: ${username}
+      password: ${password}
+      dbhost: ${dbhost}
+      database: ${database}
+    networks:
+      - demo-network
+      
+  mysqldb:
+    image: mysql:8.0.22
+    container_name: mysqldb
+    volumes:
+      - ./sqls:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_DATABASE: myjdbc
+      MYSQL_ROOT_PASSWORD: admin
+    networks:
+      - demo-network
+      
+  prometheus:
+    image: prom/prometheus:v2.35.0
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command: --config.file=/etc/prometheus/prometheus.yaml
+    ports:
+      - 9090:9090
+    depends_on:
+      - spring-boot 
+    networks:
+      - demo-network    
 
   grafana:
     environment:
@@ -53,4 +96,4 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - loki
+      - demo-network
